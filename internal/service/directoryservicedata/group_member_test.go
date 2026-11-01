@@ -158,6 +158,7 @@ func TestAccDirectoryServiceDataGroupMember_nestedGroup(t *testing.T) {
 	rName := acctest.RandomWithPrefix(t, acctest.ResourcePrefix)
 	domainName := acctest.RandomDomainName(t)
 	parentName, childName := testAccGroupMemberNames(t)
+	_, userName := testAccGroupMemberNames(t)
 	resourceName := "aws_directoryservicedata_group_member.test"
 
 	acctest.ParallelTest(ctx, t, resource.TestCase{
@@ -170,13 +171,17 @@ func TestAccDirectoryServiceDataGroupMember_nestedGroup(t *testing.T) {
 		CheckDestroy:             testAccCheckGroupMemberDestroy(ctx, t),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccGroupMemberConfig_nestedGroup(rName, domainName, parentName, childName),
+				Config: testAccGroupMemberConfig_nestedGroup(rName, domainName, parentName, childName, userName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckGroupMemberExists(ctx, t, resourceName),
 					resource.TestCheckResourceAttr(resourceName, names.AttrGroupName, parentName),
 					resource.TestCheckResourceAttr(resourceName, "member_name", childName),
 					resource.TestCheckResourceAttrPair(resourceName, "member_sid", "aws_directoryservicedata_group.child", "sid"),
 					resource.TestCheckResourceAttr(resourceName, "member_type", string(awstypes.MemberTypeGroup)),
+					// The user is in the child group only. Read must see direct members
+					// only, or removing a direct membership would go unnoticed while a
+					// nested one remains.
+					testAccCheckGroupMemberNotFound(ctx, t, resourceName, userName),
 				),
 			},
 			{
@@ -314,6 +319,29 @@ func testAccCheckGroupMemberDestroy(ctx context.Context, t *testing.T) resource.
 	}
 }
 
+// testAccCheckGroupMemberNotFound checks that memberName is not a direct member
+// of the group of the named membership resource.
+func testAccCheckGroupMemberNotFound(ctx context.Context, t *testing.T, name, memberName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return smarterr.NewError(errors.New("not found"))
+		}
+
+		conn := acctest.ProviderMeta(ctx, t).DirectoryServiceDataClient(ctx)
+		_, err := tfdirectoryservicedata.FindGroupMemberByFourPartKey(ctx, conn, rs.Primary.Attributes["directory_id"], rs.Primary.Attributes[names.AttrGroupName], memberName, "")
+
+		if retry.NotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return smarterr.NewError(err)
+		}
+
+		return smarterr.NewError(fmt.Errorf("%s is reported as a direct member of %s; ListGroupMembers may return nested members", memberName, rs.Primary.Attributes[names.AttrGroupName]))
+	}
+}
+
 func testAccCheckGroupMemberExists(ctx context.Context, t *testing.T, name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
@@ -410,7 +438,7 @@ resource "aws_directoryservicedata_group_member" "test" {
 	)
 }
 
-func testAccGroupMemberConfig_nestedGroup(rName, domainName, parentName, childName string) string {
+func testAccGroupMemberConfig_nestedGroup(rName, domainName, parentName, childName, userName string) string {
 	return acctest.ConfigCompose(
 		testAccGroupMemberConfig_base(rName, domainName),
 		fmt.Sprintf(`
@@ -429,6 +457,17 @@ resource "aws_directoryservicedata_group_member" "test" {
   group_name   = aws_directoryservicedata_group.parent.sam_account_name
   member_name  = aws_directoryservicedata_group.child.sam_account_name
 }
-`, parentName, childName),
+
+resource "aws_directoryservicedata_user" "test" {
+  directory_id     = aws_directory_service_directory.test.id
+  sam_account_name = %[3]q
+}
+
+resource "aws_directoryservicedata_group_member" "child" {
+  directory_id = aws_directory_service_directory.test.id
+  group_name   = aws_directoryservicedata_group.child.sam_account_name
+  member_name  = aws_directoryservicedata_user.test.sam_account_name
+}
+`, parentName, childName, userName),
 	)
 }

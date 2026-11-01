@@ -122,7 +122,7 @@ resource "aws_directoryservicedata_group_member" "example" {
 * `member_realm` (String) Domain name of the member.
 * `region` (String) Region where this resource is managed.
 
-In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import a Directory Service Data Group Member using the directory ID, group name, and member name, plus the member realm for a member from another domain, separated by commas. For example:
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import a Directory Service Data Group Member using the directory ID, group name, and member name, separated by commas. Add the member realm as a fourth part whenever the configuration sets `member_realm`, even to the directory's own domain; otherwise the next plan replaces the membership. For example:
 
 ```terraform
 import {
