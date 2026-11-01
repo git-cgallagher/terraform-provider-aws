@@ -16,6 +16,7 @@ var (
 	ResourceSharedDirectory         = resourceSharedDirectory
 	ResourceSharedDirectoryAccepter = resourceSharedDirectoryAccepter
 	ResourceTrust                   = newTrustResource
+	ResourceUserPassword            = newUserPasswordResource
 
 	FindConditionalForwarderByTwoPartKey = findConditionalForwarderByTwoPartKey
 	FindDirectoryByID                    = findDirectoryByID
@@ -31,10 +32,13 @@ var (
 	FindRegionByTwoPartKey               = findRegionByTwoPartKey
 	FindSharedDirectoryByTwoPartKey      = findSharedDirectoryByTwoPartKey // nosemgrep:ci.ds-in-var-name
 	FindTrustByTwoPartKey                = findTrustByTwoPartKey
+	FindUserSIDByTwoPartKey              = findUserSIDByTwoPartKey
+	UserReplaced                         = userReplaced
 )
 
 // Type aliases for use in tests only.
 type (
-	IPRouteImportID = ipRouteImportID
-	IPRouteModel    = ipRouteModel
+	IPRouteImportID      = ipRouteImportID
+	IPRouteModel         = ipRouteModel
+	UserPasswordImportID = userPasswordImportID
 )

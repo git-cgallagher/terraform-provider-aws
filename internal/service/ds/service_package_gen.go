@@ -72,6 +72,20 @@ func (p *servicePackage) FrameworkResources(ctx context.Context) []*inttypes.Ser
 			Name:     "Trust",
 			Region:   inttypes.ResourceRegionDefault(),
 		},
+		{
+			Factory:  newUserPasswordResource,
+			TypeName: "aws_directory_service_user_password",
+			Name:     "User Password",
+			Region:   inttypes.ResourceRegionDefault(),
+			Identity: inttypes.RegionalParameterizedIdentity([]inttypes.IdentityAttribute{
+				inttypes.StringIdentityAttribute("directory_id", true),
+				inttypes.StringIdentityAttribute(names.AttrUserName, true),
+			}),
+			Import: inttypes.FrameworkImport{
+				WrappedImport: true,
+				ImportID:      userPasswordImportID{},
+			},
+		},
 	}
 }
 
