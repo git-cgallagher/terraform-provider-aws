@@ -4,8 +4,10 @@
 package directoryservicedata
 
 var (
-	FindUserByTwoPartKey  = findUserByTwoPartKey
-	ResourceUser          = newUserResource
-	FindGroupByTwoPartKey = findGroupByTwoPartKey
-	ResourceGroup         = newGroupResource
+	FindUserByTwoPartKey         = findUserByTwoPartKey
+	ResourceUser                 = newUserResource
+	FindGroupByTwoPartKey        = findGroupByTwoPartKey
+	ResourceGroup                = newGroupResource
+	FindGroupMemberByFourPartKey = findGroupMemberByFourPartKey
+	ResourceGroupMember          = newGroupMemberResource
 )

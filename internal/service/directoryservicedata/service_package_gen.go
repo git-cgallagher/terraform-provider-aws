@@ -42,6 +42,22 @@ func (p *servicePackage) FrameworkResources(ctx context.Context) []*inttypes.Ser
 			},
 		},
 		{
+			Factory:  newGroupMemberResource,
+			TypeName: "aws_directoryservicedata_group_member",
+			Name:     "Group Member",
+			Region:   inttypes.ResourceRegionDefault(),
+			Identity: inttypes.RegionalParameterizedIdentity([]inttypes.IdentityAttribute{
+				inttypes.StringIdentityAttribute("directory_id", true),
+				inttypes.StringIdentityAttribute(names.AttrGroupName, true),
+				inttypes.StringIdentityAttribute("member_name", true),
+				inttypes.StringIdentityAttribute("member_realm", false),
+			}),
+			Import: inttypes.FrameworkImport{
+				WrappedImport: true,
+				ImportID:      groupMemberImportID{},
+			},
+		},
+		{
 			Factory:  newUserResource,
 			TypeName: "aws_directoryservicedata_user",
 			Name:     "User",

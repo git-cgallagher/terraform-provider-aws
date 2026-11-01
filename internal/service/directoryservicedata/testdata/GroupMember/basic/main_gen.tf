@@ -1,0 +1,73 @@
+# Copyright IBM Corp. 2014, 2026
+# SPDX-License-Identifier: MPL-2.0
+
+resource "aws_directoryservicedata_group_member" "test" {
+
+  directory_id = aws_directory_service_directory.test.id
+  group_name   = aws_directoryservicedata_group.test.sam_account_name
+  member_name  = aws_directoryservicedata_user.test.sam_account_name
+}
+
+resource "aws_directoryservicedata_group" "test" {
+
+  directory_id     = aws_directory_service_directory.test.id
+  sam_account_name = "tf-acc-test-group"
+}
+
+resource "aws_directoryservicedata_user" "test" {
+
+  directory_id     = aws_directory_service_directory.test.id
+  sam_account_name = "tf-acc-test-user"
+}
+
+resource "aws_directory_service_directory" "test" {
+
+  edition                      = "Standard"
+  name                         = var.directoryDomain
+  password                     = "SuperSecretPassw0rd"
+  type                         = "MicrosoftAD"
+  enable_directory_data_access = true
+
+  vpc_settings {
+    subnet_ids = aws_subnet.test[*].id
+    vpc_id     = aws_vpc.test.id
+  }
+}
+
+# acctest.ConfigVPCWithSubnets(rName, 2)
+
+resource "aws_vpc" "test" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# acctest.ConfigSubnets(rName, 2)
+
+resource "aws_subnet" "test" {
+  count = 2
+
+  vpc_id            = aws_vpc.test.id
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  cidr_block        = cidrsubnet(aws_vpc.test.cidr_block, 8, count.index)
+}
+
+# acctest.ConfigAvailableAZsNoOptInDefaultExclude
+
+data "aws_availability_zones" "available" {
+  exclude_zone_ids = local.default_exclude_zone_ids
+  state            = "available"
+
+  filter {
+    name   = "opt-in-status"
+    values = ["opt-in-not-required"]
+  }
+}
+
+locals {
+  default_exclude_zone_ids = ["usw2-az4", "usgw1-az2"]
+}
+
+variable "directoryDomain" {
+  type     = string
+  nullable = false
+}
+
